@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["9Q2GJ2RMAT.de.mglw.burnio"],
+        "components": [
+          { "/": "/burnio/teilen*", "comment": "Geteilte Mahlzeiten" }
+        ]
+      }
+    ]
+  }
+}
