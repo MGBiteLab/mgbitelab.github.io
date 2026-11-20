@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geteilte Mahlzeit · Burnio</title>
+  <meta name="description" content="Eine Mahlzeit wurde mit Burnio geteilt.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    .meal-name { font-size: 22px; font-weight: 700; margin: 0 0 2px; }
+    .meal-kcal { font-size: 18px; font-weight: 600; color: var(--accent-text); margin: 0; }
+    .parts { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--line); }
+    .parts li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .parts span:last-child { color: var(--muted); white-space: nowrap; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .button.secondary { background: transparent; color: var(--accent-text); border: 1px solid var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="site">
+    <div class="wrap">
+      <img src="icon.png" alt="">
+      <a class="name" href="index.html">Burnio</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Diese Mahlzeit wurde mit Burnio geteilt</h1>
+    <p class="lead">Mit Burnio kannst du sie mit einem Tipp in deinen Kalorienzähler übernehmen.</p>
+
+    <div class="card" id="meal" hidden>
+      <p class="meal-name" id="meal-name"></p>
+      <p class="meal-kcal" id="meal-kcal"></p>
+      <ul class="parts" id="meal-parts" hidden></ul>
+    </div>
+    <p class="note" id="broken" hidden>Dieser Link enthält keine lesbare Mahlzeit. Vielleicht wurde er beim Kopieren abgeschnitten.</p>
+
+    <div class="actions">
+      <a class="button" href="https://apps.apple.com/de/app/burnio-kalorienz%C3%A4hler/id6834450496">Burnio im App Store laden</a>
+      <a class="button secondary" id="open-app" href="burnio://teilen" hidden>In Burnio öffnen</a>
+    </div>
+    <p class="small">Burnio ist kostenlos, ohne Konto und ohne Werbung. Die Angaben zur Mahlzeit stehen nur im Link und werden nicht an diese Webseite übertragen.</p>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <a href="index.html">Support</a>
+      <a href="datenschutz.html">Datenschutz</a>
+      <a href="impressum.html">Impressum</a>
+    </div>
+  </footer>
+
+  <script>
+    // Die Mahlzeit steht hinter dem „#“, dieser Teil wird nie an den Server geschickt.
+    // Texte werden nur mit textContent eingesetzt, nie als HTML.
+    (function () {
+      var hash = location.hash.slice(1);
+      var meal = null;
+      try {
+        var base64 = hash.replace(/-/g, "+").replace(/_/g, "/");
+        while (base64.length % 4) base64 += "=";
+        var bytes = Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+        meal = JSON.parse(new TextDecoder().decode(bytes));
+      } catch (e) { meal = null; }
+
+      if (!meal || typeof meal.n !== "string" || meal.n.trim() === "") {
+        if (hash) document.getElementById("broken").hidden = false;
+        return;
+      }
+
+      var number = function (value) { return Math.round(Number(value) || 0).toLocaleString("de-DE"); };
+      var parts = Array.isArray(meal.b) ? meal.b.slice(0, 30) : [];
+      var kcal = parts.length
+        ? parts.reduce(function (sum, p) { return sum + Math.round((Number(p.k) || 0) * (Number(p.g) || 0) / 100); }, 0)
+        : Number(meal.k) || 0;
+
+      document.getElementById("meal-name").textContent = meal.n.slice(0, 200);
+      document.getElementById("meal-kcal").textContent = number(kcal) + " kcal";
+      var list = document.getElementById("meal-parts");
+      parts.forEach(function (p) {
+        var item = document.createElement("li");
+        var label = document.createElement("span");
+        var amount = document.createElement("span");
+        label.textContent = String(p.n || "").slice(0, 200);
+        amount.textContent = number(p.g) + (p.l ? " ml" : " g");
+        item.append(label, amount);
+        list.append(item);
+      });
+      list.hidden = parts.length === 0;
+      document.getElementById("meal").hidden = false;
+
+      var open = document.getElementById("open-app");
+      open.href = "burnio://teilen#" + hash;
+      open.hidden = false;
+    })();
+  </script>
+</body>
+</html>
